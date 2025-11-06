@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Expense Schema",
+  "type": "object",
+  "required": ["id", "description", "amount", "category", "date", "userId"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "userId": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

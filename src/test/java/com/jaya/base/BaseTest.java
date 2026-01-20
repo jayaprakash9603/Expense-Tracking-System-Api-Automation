@@ -3,74 +3,88 @@ package com.jaya.base;
 import com.jaya.config.ConfigManager;
 import com.jaya.utils.TokenManager;
 import io.qameta.allure.restassured.AllureRestAssured;
+import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
 import io.restassured.filter.log.LogDetail;
+import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.AfterSuite;
 
-/**
- * BaseTest - Base setup for all API test classes
- * Initializes RequestSpecification with common configurations
- */
 public class BaseTest {
     
     protected static RequestSpecification requestSpec;
+    protected static RequestSpecification authenticatedSpec;
     
-    /**
-     * Setup method executed once before all tests in the class
-     * Initializes RequestSpecification with base URL, headers, and filters
-     */
-    @BeforeClass
+    @BeforeSuite(alwaysRun = true)
+    public void suiteSetup() {
+        ConfigManager.printConfiguration();
+        RestAssured.baseURI = ConfigManager.getBaseUrl();
+        RestAssuredConfig config = RestAssuredConfig.config()
+                .httpClient(HttpClientConfig.httpClientConfig()
+                        .setParam("http.connection.timeout", ConfigManager.getConnectionTimeout())
+                        .setParam("http.socket.timeout", ConfigManager.getResponseTimeout()));
+        RestAssured.config = config;
+    }
+    
+    @BeforeClass(alwaysRun = true)
     public void setup() {
         RequestSpecBuilder builder = new RequestSpecBuilder();
-        
-        // Set base URI from configuration
         builder.setBaseUri(ConfigManager.getBaseUrl());
-        
-        // Set common headers
-        builder.addHeader("Content-Type", "application/json");
-        builder.addHeader("Accept", "application/json");
-        
-        // Add Allure reporting filter
+        builder.setContentType(ContentType.JSON);
+        builder.setAccept(ContentType.JSON);
         builder.addFilter(new AllureRestAssured());
-        
-        // Conditional logging based on configuration
         if (ConfigManager.isRequestLoggingEnabled()) {
             builder.log(LogDetail.ALL);
-        } else {
-            builder.log(LogDetail.URI);
         }
-        
-        // Build RequestSpecification
         requestSpec = builder.build();
     }
     
-    /**
-     * Get RequestSpecification with authentication token
-     * @return RequestSpecification with Bearer token
-     */
-    protected RequestSpecification getAuthenticatedRequest() {
-        return requestSpec.header("Authorization", "Bearer " + TokenManager.getToken());
+    @AfterSuite(alwaysRun = true)
+    public void suiteTeardown() {
+        TokenManager.clearToken();
+        RestAssured.reset();
     }
     
-    /**
-     * Get base RequestSpecification without authentication
-     * Useful for public endpoints or login tests
-     * @return RequestSpecification without auth header
-     */
+    protected RequestSpecification getAuthenticatedRequest() {
+        return new RequestSpecBuilder()
+                .addRequestSpecification(requestSpec)
+                .addHeader("Authorization", "Bearer " + TokenManager.getToken())
+                .build();
+    }
+    
     protected RequestSpecification getUnauthenticatedRequest() {
         return requestSpec;
     }
-
-    /**
-     * Create a fresh copy of the base RequestSpecification so we can safely
-     * add or override headers (like Authorization) without mutating the shared static instance.
-     * This prevents duplicate Authorization headers accumulating across tests.
-     * @return cloned RequestSpecification without auth header
-     */
+    
+    protected RequestSpecification getRequestWithToken(String token) {
+        return new RequestSpecBuilder()
+                .addRequestSpecification(requestSpec)
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
+    }
+    
+    protected RequestSpecification getRequestWithHeader(String headerName, String headerValue) {
+        return new RequestSpecBuilder()
+                .addRequestSpecification(requestSpec)
+                .addHeader(headerName, headerValue)
+                .build();
+    }
+    
     protected RequestSpecification cloneBaseSpec() {
         return new RequestSpecBuilder()
                 .addRequestSpecification(requestSpec)
                 .build();
+    }
+    
+    protected String getBaseUrl() {
+        return ConfigManager.getBaseUrl();
+    }
+    
+    protected String getEnvironment() {
+        return ConfigManager.getEnvironment();
     }
 }

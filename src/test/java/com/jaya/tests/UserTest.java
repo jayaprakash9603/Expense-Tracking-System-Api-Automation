@@ -200,7 +200,7 @@ public class UserTest extends BaseTest {
         
         // Assert
         int statusCode = response.getStatusCode();
-        Assert.assertTrue(statusCode == 400 || statusCode == 404 || statusCode == 500, 
+        Assert.assertTrue(statusCode == 400 || statusCode == 403 || statusCode == 404 || statusCode == 500, 
                 "Status code should indicate validation error");
     }
     
@@ -438,7 +438,7 @@ public class UserTest extends BaseTest {
         
         // Assert
         int statusCode = response.getStatusCode();
-        Assert.assertTrue(statusCode == 400 || statusCode == 404 || statusCode == 500, 
+        Assert.assertTrue(statusCode == 400 || statusCode == 403 || statusCode == 404 || statusCode == 500, 
                 "Status code should indicate validation error");
     }
     

@@ -1,34 +1,50 @@
 package com.jaya.tests;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
+import com.jaya.base.BaseTest;
+import com.jaya.clients.AuthClient;
+import com.jaya.pojo.SignupRequest;
 import io.restassured.response.Response;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static io.restassured.RestAssured.given;
-
-public class SimpleApiTest {
+/**
+ * SimpleApiTest - Basic API test demonstrating the framework usage
+ * 
+ * This test class shows how to use the framework properly:
+ * 1. Extend BaseTest (provides base URL automatically)
+ * 2. Use API clients (AuthClient, UserClient, etc.)
+ * 3. Use Endpoints constants (no hardcoded URLs)
+ * 4. Use HttpStatus constants for assertions
+ * 
+ * NO URL CONFIGURATION NEEDED IN THIS CLASS!
+ * 
+ * @author Expense Tracking System Team
+ */
+public class SimpleApiTest extends BaseTest {
+    
+    private AuthClient authClient;
+    
+    @BeforeClass
+    public void setupClient() {
+        // Initialize the auth client with unauthenticated request spec
+        // Base URL is already configured in BaseTest
+        authClient = new AuthClient(getUnauthenticatedRequest());
+    }
     
     @Test
     public void testSimpleSignup() {
-        RestAssured.baseURI = "http://localhost:6001";
+        // Create signup request
+        SignupRequest signupRequest = new SignupRequest();
+        signupRequest.setFirstName("Test");
+        signupRequest.setLastName("User");
+        signupRequest.setEmail("test" + System.currentTimeMillis() + "@example.com");
+        signupRequest.setPassword("Test@123");
+        signupRequest.setGender("male");
         
-        Map<String, String> signupPayload = new HashMap<>();
-        signupPayload.put("firstName", "Test");
-        signupPayload.put("lastName", "User");
-        signupPayload.put("email", "test" + System.currentTimeMillis() + "@example.com");
-        signupPayload.put("password", "Test@123");
-        signupPayload.put("gender", "male");
+        // Execute signup using the client
+        Response response = authClient.signup(signupRequest);
         
-        Response response = given()
-                .contentType(ContentType.JSON)
-                .body(signupPayload)
-                .when()
-                .post("/auth/signup");
-        
+        // Log results
         System.out.println("Status Code: " + response.getStatusCode());
         System.out.println("Response Body: " + response.getBody().asString());
     }

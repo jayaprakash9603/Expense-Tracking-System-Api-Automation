@@ -1,6 +1,7 @@
 package com.jaya.base;
 
 import com.jaya.config.ConfigManager;
+import com.jaya.utils.TestUserCleanupManager;
 import com.jaya.utils.TokenManager;
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.RestAssured;
@@ -45,6 +46,9 @@ public class BaseTest {
     
     @AfterSuite(alwaysRun = true)
     public void suiteTeardown() {
+        // Cleanup all test users created during test execution
+        TestUserCleanupManager.cleanupAllUsers();
+        
         TokenManager.clearToken();
         RestAssured.reset();
     }

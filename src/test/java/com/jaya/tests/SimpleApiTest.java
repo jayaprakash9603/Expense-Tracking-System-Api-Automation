@@ -3,6 +3,7 @@ package com.jaya.tests;
 import com.jaya.base.BaseTest;
 import com.jaya.clients.AuthClient;
 import com.jaya.pojo.SignupRequest;
+import com.jaya.utils.TestUserCleanupManager;
 import io.restassured.response.Response;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -37,8 +38,10 @@ public class SimpleApiTest extends BaseTest {
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setFirstName("Test");
         signupRequest.setLastName("User");
-        signupRequest.setEmail("test" + System.currentTimeMillis() + "@example.com");
-        signupRequest.setPassword("Test@123");
+        String testEmail = "test" + System.currentTimeMillis() + "@example.com";
+        String testPassword = "Test@123";
+        signupRequest.setEmail(testEmail);
+        signupRequest.setPassword(testPassword);
         signupRequest.setGender("male");
         
         // Execute signup using the client
@@ -47,5 +50,10 @@ public class SimpleApiTest extends BaseTest {
         // Log results
         System.out.println("Status Code: " + response.getStatusCode());
         System.out.println("Response Body: " + response.getBody().asString());
+        
+        // Register user for cleanup if signup was successful
+        if (response.getStatusCode() == 201) {
+            TestUserCleanupManager.registerUserForCleanup(testEmail, testPassword);
+        }
     }
 }

@@ -1,8 +1,11 @@
 package com.jaya.pojo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * UserUpdateRequest POJO - Request model for updating user profile
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserUpdateRequest {
     
     private String fullName;

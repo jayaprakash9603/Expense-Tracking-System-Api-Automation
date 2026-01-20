@@ -8,6 +8,7 @@ import com.jaya.pojo.LoginRequest;
 import com.jaya.pojo.SignupRequest;
 import com.jaya.pojo.User;
 import com.jaya.utils.ResponseValidator;
+import com.jaya.utils.TestUserCleanupManager;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import org.testng.Assert;
@@ -59,6 +60,9 @@ public class AuthTest extends BaseTest {
         String jwt = response.jsonPath().getString("jwt");
         Assert.assertNotNull(jwt, "JWT token should not be null");
         Assert.assertFalse(jwt.isEmpty(), "JWT token should not be empty");
+        
+        // Register user for cleanup at end of test suite
+        TestUserCleanupManager.registerUserForCleanup(testUserEmail, testUserPassword);
     }
     
     @Test(priority = 2)
@@ -414,11 +418,13 @@ public class AuthTest extends BaseTest {
     @Severity(SeverityLevel.MINOR)
     public void testSignup_MaximumFieldLengths() {
         // Arrange
+        String boundaryEmail = "verylongemail" + System.currentTimeMillis() + "@example.com";
+        String boundaryPassword = "VeryComplexPassword@123456789";
         SignupRequest boundaryRequest = AuthPayload.createSignupRequest(
                 "A".repeat(50), // Long first name
                 "B".repeat(50), // Long last name
-                "verylongemail" + System.currentTimeMillis() + "@example.com",
-                "VeryComplexPassword@123456789",
+                boundaryEmail,
+                boundaryPassword,
                 "male"
         );
         
@@ -429,6 +435,11 @@ public class AuthTest extends BaseTest {
         int statusCode = response.getStatusCode();
         Assert.assertTrue(statusCode == 201 || statusCode == 400 || statusCode == 409, 
                 "Status code should be 201, 400, or 409");
+        
+        // Register user for cleanup if signup was successful
+        if (statusCode == 201) {
+            TestUserCleanupManager.registerUserForCleanup(boundaryEmail, boundaryPassword);
+        }
     }
     
     @Test(priority = 22)

@@ -10,6 +10,7 @@ import com.jaya.pojo.SignupRequest;
 import com.jaya.pojo.User;
 import com.jaya.pojo.UserUpdateRequest;
 import com.jaya.utils.ResponseValidator;
+import com.jaya.utils.TestUserCleanupManager;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
 import org.testng.Assert;
@@ -60,6 +61,9 @@ public class UserTest extends BaseTest {
             if (userResponse.getStatusCode() == 200) {
                 testUserId = userResponse.jsonPath().getLong("id");
             }
+            
+            // Register user for cleanup with userId and token (in case password gets changed during tests)
+            TestUserCleanupManager.registerUserForCleanup(testUserId, testUserEmail, testUserPassword, testUserToken);
         }
     }
     

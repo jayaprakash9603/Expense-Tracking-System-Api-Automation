@@ -24,6 +24,22 @@ public class TestUserCleanupManager {
     private static final String SEPARATOR = "=".repeat(60);
     private static final String LINE = "-".repeat(60);
 
+    private static boolean isLoggingEnabled() {
+        return ConfigManager.isCleanupLoggingEnabled();
+    }
+
+    private static void logInfo(String message, Object... args) {
+        if (isLoggingEnabled()) {
+            log.info(message, args);
+        }
+    }
+
+    private static void logWarn(String message, Object... args) {
+        if (isLoggingEnabled()) {
+            log.warn(message, args);
+        }
+    }
+
     public static class TestUser {
         private final Long userId;
         private final String email;
@@ -70,13 +86,13 @@ public class TestUserCleanupManager {
     @Step("Register user for cleanup: {email}")
     public static void registerUserForCleanup(Long userId, String email, String password, String token) {
         createdUsers.add(new TestUser(userId, email, password, token));
-        log.info("[CLEANUP] Registered: {} (Total: {})", email, createdUsers.size());
+        logInfo("[CLEANUP] Registered: {} (Total: {})", email, createdUsers.size());
     }
 
     @Step("Register user for cleanup: {email}")
     public static void registerUserForCleanup(String email, String password) {
         createdUsers.add(new TestUser(null, email, password, null));
-        log.info("[CLEANUP] Registered: {} (Total: {})", email, createdUsers.size());
+        logInfo("[CLEANUP] Registered: {} (Total: {})", email, createdUsers.size());
     }
 
     @Step("Update password for registered user: {email}")
@@ -87,7 +103,7 @@ public class TestUserCleanupManager {
                 .ifPresent(user -> {
                     user.setPassword(newPassword);
                     user.setToken(null);
-                    log.info("[CLEANUP] Updated password for: {}", email);
+                    logInfo("[CLEANUP] Updated password for: {}", email);
                 });
     }
 
@@ -101,14 +117,14 @@ public class TestUserCleanupManager {
 
     @Step("Cleanup all test users")
     public static void cleanupAllUsers() {
-        log.info("\n{}\nTEST USER CLEANUP STARTING\n{}", SEPARATOR, SEPARATOR);
+        logInfo("\n{}\nTEST USER CLEANUP STARTING\n{}", SEPARATOR, SEPARATOR);
 
         if (createdUsers.isEmpty()) {
-            log.info("No test users to cleanup\n{}\n", SEPARATOR);
+            logInfo("No test users to cleanup\n{}\n", SEPARATOR);
             return;
         }
 
-        log.info("Total users to cleanup: {}\n{}", createdUsers.size(), LINE);
+        logInfo("Total users to cleanup: {}\n{}", createdUsers.size(), LINE);
 
         RequestSpecification baseSpec = createBaseSpec();
         AuthClient authClient = new AuthClient(baseSpec);
@@ -119,15 +135,15 @@ public class TestUserCleanupManager {
         for (TestUser user : createdUsers) {
             if (deleteUser(user, authClient, baseSpec)) {
                 successCount++;
-                log.info("[SUCCESS] Deleted: {}", user.getEmail());
+                logInfo("[SUCCESS] Deleted: {}", user.getEmail());
             } else {
                 failCount++;
-                log.warn("[FAILED] Could not delete: {}", user.getEmail());
+                logWarn("[FAILED] Could not delete: {}", user.getEmail());
             }
         }
 
-        log.info("{}\nCLEANUP SUMMARY", LINE);
-        log.info("  Total: {}, Deleted: {}, Failed: {}\n{}\n", createdUsers.size(), successCount, failCount, SEPARATOR);
+        logInfo("{}\nCLEANUP SUMMARY", LINE);
+        logInfo("  Total: {}, Deleted: {}, Failed: {}\n{}\n", createdUsers.size(), successCount, failCount, SEPARATOR);
 
         createdUsers.clear();
     }

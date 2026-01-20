@@ -66,7 +66,7 @@ public final class TestContext {
         TEST_STATS.put(fullName, new TestStats(
                 data.testId, fullName, duration, data.requestCount, passed, failureReason));
 
-        String status = passed ? "✓ PASSED" : "✗ FAILED";
+        String status = passed ? "[PASS]" : "[FAIL]";
         log.debug("[TEST-END] {} - {} | Duration: {}ms | API Calls: {}",
                 fullName, status, duration, data.requestCount);
 

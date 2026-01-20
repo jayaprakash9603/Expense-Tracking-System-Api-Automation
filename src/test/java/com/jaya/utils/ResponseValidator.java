@@ -337,9 +337,9 @@ public final class ResponseValidator {
      */
     private static void logValidation(String validation, String expected, String actual, boolean passed) {
         if (passed) {
-            log.debug("  ✓ PASS: {} | Expected: {} | Actual: {}", validation, expected, actual);
+            log.debug("  [PASS] {} | Expected: {} | Actual: {}", validation, expected, actual);
         } else {
-            log.error("  ✗ FAIL: {} | Expected: {} | Actual: {}", validation, expected, actual);
+            log.error("  [FAIL] {} | Expected: {} | Actual: {}", validation, expected, actual);
         }
     }
 }

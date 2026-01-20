@@ -1,5 +1,6 @@
 package com.jaya.utils;
 
+import com.jaya.config.ConfigManager;
 import io.restassured.response.Response;
 import io.restassured.specification.QueryableRequestSpecification;
 import io.restassured.specification.RequestSpecification;
@@ -46,11 +47,17 @@ public final class RequestResponseLogger {
 
     /**
      * Logs a complete API request with all details.
+     * Logging is controlled by 'enable.request.logging' config property.
      */
     public static void logRequest(String requestId, String method, String endpoint,
             RequestSpecification spec, Object body) {
+        // Check if request logging is enabled in config
+        if (!ConfigManager.isRequestLoggingEnabled()) {
+            return;
+        }
+
         if (!log.isDebugEnabled()) {
-            log.info("[{}] → {} {}", requestId, method, endpoint);
+            log.info("[{}] -> {} {}", requestId, method, endpoint);
             return;
         }
 
@@ -117,13 +124,19 @@ public final class RequestResponseLogger {
 
     /**
      * Logs a complete API response with all details.
+     * Logging is controlled by 'enable.response.logging' config property.
      */
     public static void logResponse(String requestId, Response response, long durationMs) {
+        // Check if response logging is enabled in config
+        if (!ConfigManager.isResponseLoggingEnabled()) {
+            return;
+        }
+
         int statusCode = response.getStatusCode();
         String statusColor = getStatusColor(statusCode);
 
         if (!log.isDebugEnabled()) {
-            log.info("[{}] ← {} {} ({}ms)", requestId, statusCode,
+            log.info("[{}] <- {} {} ({}ms)", requestId, statusCode,
                     response.getStatusLine().replaceFirst("HTTP/\\d\\.\\d ", ""), durationMs);
             return;
         }

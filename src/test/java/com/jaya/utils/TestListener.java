@@ -50,10 +50,10 @@ public class TestListener implements ITestListener {
         log.info("  TEST SUITE COMPLETED: {}", context.getName());
         log.info("{}", SINGLE_LINE);
         log.info("  Results Summary:");
-        log.info("    ✓ Passed  : {} ({}%)", passed, total > 0 ? (passed * 100 / total) : 0);
-        log.info("    ✗ Failed  : {} ({}%)", failed, total > 0 ? (failed * 100 / total) : 0);
-        log.info("    ⊘ Skipped : {}", skipped);
-        log.info("    ═ Total   : {}", total);
+        log.info("    [PASS] Passed  : {} ({}%)", passed, total > 0 ? (passed * 100 / total) : 0);
+        log.info("    [FAIL] Failed  : {} ({}%)", failed, total > 0 ? (failed * 100 / total) : 0);
+        log.info("    [SKIP] Skipped : {}", skipped);
+        log.info("    [ALL]  Total   : {}", total);
         log.info("{}", SINGLE_LINE);
         log.info("  Execution Time: {} ms ({} sec)", duration, duration / 1000);
         log.info("  End Time: {}", LocalDateTime.now().format(TIME_FORMAT));
@@ -61,9 +61,9 @@ public class TestListener implements ITestListener {
 
         // Log failed test names for quick reference
         if (failed > 0) {
-            log.error("\n  ⚠ FAILED TESTS:");
+            log.error("\n  [!] FAILED TESTS:");
             context.getFailedTests().getAllResults().forEach(result -> {
-                log.error("    • {}.{}",
+                log.error("    - {}.{}",
                         getSimpleClassName(result.getTestClass().getName()),
                         result.getMethod().getMethodName());
                 if (result.getThrowable() != null) {
@@ -85,7 +85,7 @@ public class TestListener implements ITestListener {
         TestContext.startTest(testClass, testName);
 
         log.info("\n{}", SINGLE_LINE);
-        log.info("▶ TEST STARTED: {}.{}", getSimpleClassName(testClass), testName);
+        log.info(">>> TEST STARTED: {}.{}", getSimpleClassName(testClass), testName);
         log.info("  Test ID     : {}", TestContext.getCurrentTestId());
         log.info("  Description : {}", getTestDescription(result));
         log.info("  Priority    : {}", result.getMethod().getPriority());
@@ -105,7 +105,7 @@ public class TestListener implements ITestListener {
         long duration = getDuration(result);
         int apiCalls = TestContext.getRequestCount();
 
-        log.info("\n✓ TEST PASSED: {}", result.getMethod().getMethodName());
+        log.info("\n[PASS] TEST PASSED: {}", result.getMethod().getMethodName());
         log.info("  Test ID      : {}", TestContext.getCurrentTestId());
         log.info("  Duration     : {} ms {}", duration, getDurationIndicator(duration));
         log.info("  API Calls    : {}", apiCalls);
@@ -121,7 +121,7 @@ public class TestListener implements ITestListener {
         int apiCalls = TestContext.getRequestCount();
         Throwable throwable = result.getThrowable();
 
-        log.error("\n✗ TEST FAILED: {}", result.getMethod().getMethodName());
+        log.error("\n[FAIL] TEST FAILED: {}", result.getMethod().getMethodName());
         log.error("  Test ID      : {}", TestContext.getCurrentTestId());
         log.error("  Duration     : {} ms", duration);
         log.error("  API Calls    : {}", apiCalls);

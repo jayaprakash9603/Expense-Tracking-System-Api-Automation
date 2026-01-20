@@ -121,6 +121,10 @@ public final class ConfigManager {
         return getBooleanProperty("enable.response.logging", true);
     }
 
+    public static boolean isCleanupLoggingEnabled() {
+        return getBooleanProperty("enable.cleanup.logging", true);
+    }
+
     public static String getAllureResultsDirectory() {
         return getProperty("allure.results.directory", "target/allure-results");
     }

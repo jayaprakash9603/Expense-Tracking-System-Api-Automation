@@ -9,28 +9,16 @@ import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * TestUserCleanupManager - Manages cleanup of test users created during test execution.
- * Stores user information and deletes all registered users at the end of test suite.
- */
 public class TestUserCleanupManager {
     
-    private static final Logger logger = LoggerFactory.getLogger(TestUserCleanupManager.class);
-    
-    // Thread-safe list to store created users
     private static final List<TestUser> createdUsers = new CopyOnWriteArrayList<>();
     
-    /**
-     * Inner class to hold user details for cleanup
-     */
     public static class TestUser {
         private final Long userId;
         private final String email;
@@ -55,13 +43,6 @@ public class TestUserCleanupManager {
         }
     }
     
-    /**
-     * Register a user for cleanup after tests
-     * @param userId User ID
-     * @param email User email
-     * @param password User password
-     * @param token JWT token (optional, can be null)
-     */
     @Step("Register user for cleanup: {email}")
     public static void registerUserForCleanup(Long userId, String email, String password, String token) {
         TestUser user = new TestUser(userId, email, password, token);
@@ -69,12 +50,6 @@ public class TestUserCleanupManager {
         System.out.println("[CLEANUP] Registered user for cleanup: " + email + " (Total: " + createdUsers.size() + ")");
     }
     
-    /**
-     * Register a user for cleanup using only email and password
-     * User ID will be fetched during cleanup
-     * @param email User email
-     * @param password User password
-     */
     @Step("Register user for cleanup: {email}")
     public static void registerUserForCleanup(String email, String password) {
         TestUser user = new TestUser(null, email, password, null);
@@ -82,26 +57,14 @@ public class TestUserCleanupManager {
         System.out.println("[CLEANUP] Registered user for cleanup: " + email + " (Total: " + createdUsers.size() + ")");
     }
     
-    /**
-     * Get list of all registered users (read-only)
-     * @return Unmodifiable list of registered users
-     */
     public static List<TestUser> getRegisteredUsers() {
         return Collections.unmodifiableList(new ArrayList<>(createdUsers));
     }
     
-    /**
-     * Get count of registered users
-     * @return Number of users registered for cleanup
-     */
     public static int getRegisteredUserCount() {
         return createdUsers.size();
     }
     
-    /**
-     * Delete all registered test users
-     * Should be called in @AfterSuite
-     */
     @Step("Cleanup all test users")
     public static void cleanupAllUsers() {
         System.out.println("\n" + "=".repeat(60));
@@ -146,21 +109,15 @@ public class TestUserCleanupManager {
         System.out.println("  Failed:         " + failCount);
         System.out.println("=".repeat(60) + "\n");
         
-        // Clear the list after cleanup
         createdUsers.clear();
     }
     
-    /**
-     * Delete a single user
-     */
     private static boolean deleteUser(TestUser user, AuthClient authClient, RequestSpecification baseSpec) {
         try {
-            // First, login to get a valid token
             String token = user.getToken();
             Long userId = user.getUserId();
             
             if (token == null || token.isEmpty()) {
-                // Login to get token
                 LoginRequest loginRequest = new LoginRequest(user.getEmail(), user.getPassword());
                 Response loginResponse = authClient.signin(loginRequest);
                 
@@ -172,7 +129,6 @@ public class TestUserCleanupManager {
                 }
             }
             
-            // Get user ID if not available
             if (userId == null) {
                 RequestSpecification authSpec = createAuthenticatedSpec(baseSpec, token);
                 UserClient userClient = new UserClient(authSpec);
@@ -186,7 +142,6 @@ public class TestUserCleanupManager {
                 }
             }
             
-            // Delete the user
             RequestSpecification authSpec = createAuthenticatedSpec(baseSpec, token);
             UserClient userClient = new UserClient(authSpec);
             Response deleteResponse = userClient.deleteUser(userId);
@@ -204,9 +159,6 @@ public class TestUserCleanupManager {
         }
     }
     
-    /**
-     * Create base request specification
-     */
     private static RequestSpecification createBaseSpec() {
         return new RequestSpecBuilder()
                 .setBaseUri(ConfigManager.getBaseUrl())
@@ -215,9 +167,6 @@ public class TestUserCleanupManager {
                 .build();
     }
     
-    /**
-     * Create authenticated request specification
-     */
     private static RequestSpecification createAuthenticatedSpec(RequestSpecification baseSpec, String token) {
         return new RequestSpecBuilder()
                 .addRequestSpecification(baseSpec)
@@ -225,11 +174,7 @@ public class TestUserCleanupManager {
                 .build();
     }
     
-    /**
-     * Clear all registered users without deleting them (use with caution)
-     */
     public static void clearRegisteredUsers() {
         createdUsers.clear();
-        logger.info("Cleared all registered users from cleanup list");
     }
 }

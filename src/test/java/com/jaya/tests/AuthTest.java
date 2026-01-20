@@ -3,10 +3,8 @@ package com.jaya.tests;
 import com.jaya.base.BaseTest;
 import com.jaya.clients.AuthClient;
 import com.jaya.payloads.AuthPayload;
-import com.jaya.pojo.AuthResponse;
 import com.jaya.pojo.LoginRequest;
 import com.jaya.pojo.SignupRequest;
-import com.jaya.pojo.User;
 import com.jaya.utils.ResponseValidator;
 import com.jaya.utils.TestUserCleanupManager;
 import io.qameta.allure.*;
@@ -17,10 +15,6 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-/**
- * AuthTest - Comprehensive test class for Authentication endpoints
- * Tests signup, signin, OTP, password reset, and user retrieval
- */
 @Epic("Authentication Management")
 @Feature("Auth Operations")
 public class AuthTest extends BaseTest {
@@ -35,8 +29,6 @@ public class AuthTest extends BaseTest {
         super.setup(); // Ensure parent setup runs first
         authClient = new AuthClient(getUnauthenticatedRequest());
     }
-    
-    // ==================== SIGNUP TESTS ====================
     
     @Test(priority = 1)
     @Story("User Signup")
@@ -125,8 +117,6 @@ public class AuthTest extends BaseTest {
                 "Status code should be 400 or 500 for missing fields");
     }
     
-    // ==================== SIGNIN TESTS ====================
-    
     @Test(priority = 5, dependsOnMethods = "testSignup_Success")
     @Story("User Signin")
     @Description("Verify that user can login with valid credentials")
@@ -199,8 +189,6 @@ public class AuthTest extends BaseTest {
                 "Status code should be 400 or 401 for empty credentials");
     }
     
-    // ==================== TOKEN REFRESH TESTS ====================
-    
     @Test(priority = 9, dependsOnMethods = "testSignin_Success")
     @Story("Token Management")
     @Description("Verify that authentication token can be refreshed")
@@ -248,8 +236,6 @@ public class AuthTest extends BaseTest {
                 "Error message should indicate authentication/token issue. Got: " + message);
     }
     
-    // ==================== EMAIL CHECK TESTS ====================
-    
     @Test(priority = 11)
     @Story("Email Validation")
     @Description("Verify email availability check for new email")
@@ -283,8 +269,6 @@ public class AuthTest extends BaseTest {
         ResponseValidator.validateFieldExists(response, "isAvailable");
         ResponseValidator.validateFieldValue(response, "isAvailable", false);
     }
-    
-    // ==================== GET USER TESTS ====================
     
     @Test(priority = 13, dependsOnMethods = "testSignup_Success")
     @Story("User Retrieval")
@@ -360,24 +344,6 @@ public class AuthTest extends BaseTest {
         Assert.assertNotNull(users, "Users list should not be null");
     }
     
-    // ==================== OTP TESTS ====================
-    
-//    @Test(priority = 18, dependsOnMethods = "testSignup_Success")
-//    @Story("Password Reset")
-//    @Description("Verify OTP can be sent to registered email")
-//    @Severity(SeverityLevel.NORMAL)
-//    public void testSendOtp_Success() {
-//        // Arrange
-//        Map<String, String> otpPayload = AuthPayload.createSendOtpPayload(testUserEmail);
-//
-//        // Act
-//        Response response = authClient.sendOtp(otpPayload);
-//
-//        // Assert
-//        ResponseValidator.validateStatusCode(response, 200);
-//        ResponseValidator.validateFieldValue(response, "message", "OTP sent successfully");
-//    }
-    
     @Test(priority = 19)
     @Story("Password Reset")
     @Description("Verify OTP send fails for non-existent email")
@@ -409,8 +375,6 @@ public class AuthTest extends BaseTest {
         ResponseValidator.validateStatusCode(response, 400);
         ResponseValidator.validateErrorMessage(response, "Invalid or expired OTP");
     }
-    
-    // ==================== BOUNDARY TESTS ====================
     
     @Test(priority = 21)
     @Story("Boundary Conditions")

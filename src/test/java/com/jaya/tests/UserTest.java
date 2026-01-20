@@ -5,9 +5,7 @@ import com.jaya.clients.AuthClient;
 import com.jaya.clients.UserClient;
 import com.jaya.payloads.AuthPayload;
 import com.jaya.payloads.UserPayload;
-import com.jaya.pojo.LoginRequest;
 import com.jaya.pojo.SignupRequest;
-import com.jaya.pojo.User;
 import com.jaya.pojo.UserUpdateRequest;
 import com.jaya.utils.ResponseValidator;
 import com.jaya.utils.TestUserCleanupManager;
@@ -17,10 +15,6 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-/**
- * UserTest - Comprehensive test class for User management endpoints
- * Tests user profile, update, delete, and role management
- */
 @Epic("User Management")
 @Feature("User Operations")
 public class UserTest extends BaseTest {
@@ -44,9 +38,6 @@ public class UserTest extends BaseTest {
         userClient = new UserClient(cloneBaseSpec().header("Authorization", "Bearer " + testUserToken));
     }
     
-    /**
-     * Helper method to create and authenticate a test user
-     */
     private void createTestUser() {
         // Create user
         SignupRequest signupRequest = AuthPayload.createDefaultSignupRequest();
@@ -66,8 +57,6 @@ public class UserTest extends BaseTest {
             TestUserCleanupManager.registerUserForCleanup(testUserId, testUserEmail, testUserPassword, testUserToken);
         }
     }
-    
-    // ==================== GET USER PROFILE TESTS ====================
     
     @Test(priority = 1)
     @Story("User Profile")
@@ -103,8 +92,6 @@ public class UserTest extends BaseTest {
         Assert.assertTrue(statusCode == 401 || statusCode == 403, 
                 "Status code should be 401 or 403 for unauthorized access. Got: " + statusCode);
     }
-    
-    // ==================== GET USER BY EMAIL TESTS ====================
     
     @Test(priority = 3)
     @Story("User Retrieval")
@@ -146,8 +133,6 @@ public class UserTest extends BaseTest {
         Assert.assertTrue(statusCode == 400 || statusCode == 404 || statusCode == 500, 
                 "Status code should indicate validation error");
     }
-    
-    // ==================== GET USER BY ID TESTS ====================
     
     @Test(priority = 6)
     @Story("User Retrieval")
@@ -207,8 +192,6 @@ public class UserTest extends BaseTest {
         Assert.assertTrue(statusCode == 400 || statusCode == 403 || statusCode == 404 || statusCode == 500, 
                 "Status code should indicate validation error");
     }
-    
-    // ==================== UPDATE USER TESTS ====================
     
     @Test(priority = 10)
     @Story("User Update")
@@ -317,8 +300,6 @@ public class UserTest extends BaseTest {
                 "Status code should indicate validation error or be accepted");
     }
     
-    // ==================== DELETE USER TESTS ====================
-    
     @Test(priority = 16)
     @Story("User Deletion")
     @Description("Verify deleting own account")
@@ -382,9 +363,6 @@ public class UserTest extends BaseTest {
                 "Status code should indicate user not found or access denied");
     }
     
-    // ==================== ROLE MANAGEMENT TESTS ====================
-    // Note: These tests require ADMIN role, so they may fail without proper setup
-    
     @Test(priority = 19)
     @Story("Role Management")
     @Description("Verify adding role to user requires admin access")
@@ -412,8 +390,6 @@ public class UserTest extends BaseTest {
         Assert.assertTrue(statusCode == 403 || statusCode == 500, 
                 "Status code should be 403 or 500 without admin role");
     }
-    
-    // ==================== BOUNDARY TESTS ====================
     
     @Test(priority = 21)
     @Story("Boundary Conditions")

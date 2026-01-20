@@ -132,6 +132,35 @@ public abstract class BaseClient {
                 () -> request().pathParam(paramName, paramValue).body(body).patch(endpoint));
     }
 
+    // ==================== NO-RETRY METHODS (for negative tests expecting errors)
+    // ====================
+
+    /**
+     * GET without retry - use for tests expecting error responses (4xx/5xx)
+     */
+    @Step("GET {endpoint} (no retry)")
+    protected Response getNoRetry(String endpoint) {
+        return executeWithoutRetry("GET", endpoint, null, () -> request().get(endpoint));
+    }
+
+    /**
+     * GET with path param without retry - use for tests expecting error responses
+     */
+    @Step("GET {endpoint} with path param {paramName}={paramValue} (no retry)")
+    protected Response getWithPathParamNoRetry(String endpoint, String paramName, Object paramValue) {
+        return executeWithoutRetry("GET", endpoint, null,
+                () -> request().pathParam(paramName, paramValue).get(endpoint));
+    }
+
+    /**
+     * PUT with query param without retry - use for tests expecting error responses
+     */
+    @Step("PUT {endpoint} with query param {paramName}={paramValue} (no retry)")
+    protected Response putWithQueryParamNoRetry(String endpoint, String paramName, Object paramValue, Object body) {
+        return executeWithoutRetry("PUT", endpoint, body,
+                () -> request().queryParam(paramName, paramValue).body(body).put(endpoint));
+    }
+
     // ==================== UNAUTHENTICATED REQUESTS (DRY) ====================
 
     protected Response unauthenticatedGet(String endpoint) {
@@ -254,6 +283,50 @@ public abstract class BaseClient {
         }
 
         throw new RuntimeException("Request failed after " + maxRetries + " attempts: " + operation, lastException);
+    }
+
+    /**
+     * Executes an HTTP request WITHOUT retry logic.
+     * Use this for negative tests that expect error responses (4xx/5xx).
+     * Avoids unnecessary retries and delays when testing error scenarios.
+     */
+    private Response executeWithoutRetry(String method, String endpoint, Object body,
+            Supplier<Response> requestSupplier) {
+        String requestId = TestContext.registerRequest();
+        String operation = method + " " + endpoint;
+        long startTime = System.currentTimeMillis();
+
+        // Log request details
+        RequestResponseLogger.logRequest(requestId, method, endpoint, requestSpec, body);
+
+        try {
+            ValidatableResponse validatable = requestSupplier.get().then();
+            applyLogging(validatable);
+            Response response = validatable.extract().response();
+
+            long duration = System.currentTimeMillis() - startTime;
+
+            // Log response
+            RequestResponseLogger.logResponse(requestId, response, duration);
+
+            // Log summary based on status code
+            int statusCode = response.getStatusCode();
+            if (statusCode >= 500) {
+                log.warn("[{}] {} completed with server error {} in {}ms (no retry)",
+                        requestId, operation, statusCode, duration);
+            } else if (statusCode >= 400) {
+                log.warn("[{}] {} completed with client error {} in {}ms",
+                        requestId, operation, statusCode, duration);
+            } else {
+                log.info("[{}] {} completed successfully {} in {}ms",
+                        requestId, operation, statusCode, duration);
+            }
+
+            return response;
+        } catch (Exception e) {
+            RequestResponseLogger.logRequestFailure(requestId, operation, e);
+            throw new RuntimeException("Request failed: " + operation, e);
+        }
     }
 
     /**

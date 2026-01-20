@@ -75,6 +75,14 @@ public class AuthClient extends BaseClient {
         return get(replacePath(Endpoints.AUTH.USER_BY_ID_ALT, "userId", userId));
     }
 
+    /**
+     * Get user by ID (alt) without retry - use for negative tests expecting errors
+     */
+    @Step("Get user by ID (alt, no retry): {userId}")
+    public Response getUserByIdAltNoRetry(Long userId) {
+        return getNoRetry(replacePath(Endpoints.AUTH.USER_BY_ID_ALT, "userId", userId));
+    }
+
     @Step("Forgot password")
     public Response forgotPassword(Map<String, String> emailPayload) {
         return post(Endpoints.AUTH.FORGOT_PASSWORD, emailPayload);

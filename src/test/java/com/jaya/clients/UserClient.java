@@ -32,6 +32,14 @@ public class UserClient extends BaseClient {
         return getWithPathParam(Endpoints.USER.BY_ID, "id", userId);
     }
 
+    /**
+     * Get user by ID without retry - use for negative tests expecting errors
+     */
+    @Step("Get user by ID (no retry): {userId}")
+    public Response getUserByIdNoRetry(Long userId) {
+        return getWithPathParamNoRetry(Endpoints.USER.BY_ID, "id", userId);
+    }
+
     @Step("Update user profile")
     public Response updateUser(UserUpdateRequest updateRequest) {
         return put(Endpoints.USER.UPDATE, updateRequest);
@@ -75,6 +83,14 @@ public class UserClient extends BaseClient {
     @Step("Switch user mode to: {mode}")
     public Response switchUserMode(String mode) {
         return putWithQueryParam(Endpoints.USER.SWITCH_MODE, "mode", mode, "");
+    }
+
+    /**
+     * Switch user mode without retry - use for negative tests expecting errors
+     */
+    @Step("Switch user mode (no retry): {mode}")
+    public Response switchUserModeNoRetry(String mode) {
+        return putWithQueryParamNoRetry(Endpoints.USER.SWITCH_MODE, "mode", mode, "");
     }
 
     @Step("Switch user mode without auth")

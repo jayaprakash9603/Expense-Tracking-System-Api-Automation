@@ -422,11 +422,15 @@ public class UserTest extends BaseTest {
     @Description("Verify getting user with very large ID")
     @Severity(SeverityLevel.MINOR)
     public void testGetUserById_LargeId() {
-        Response response = userClient.getUserById(Long.MAX_VALUE);
+        // Using no-retry method since we expect an error response (500 due to Integer
+        // overflow)
+        Response response = userClient.getUserByIdNoRetry(Long.MAX_VALUE);
 
         int statusCode = response.getStatusCode();
-        Assert.assertTrue(statusCode == 404 || statusCode == 403 || statusCode == 500,
-                "Status code should indicate user not found");
+        // Backend expects Integer but Long.MAX_VALUE exceeds Integer range
+        // This causes a type conversion error (500) rather than proper validation
+        Assert.assertTrue(statusCode == 400 || statusCode == 404 || statusCode == 500,
+                "Status code should indicate invalid ID or user not found. Got: " + statusCode);
     }
 
     @Test(priority = 24)
@@ -434,7 +438,9 @@ public class UserTest extends BaseTest {
     @Description("Verify switching user mode to USER")
     @Severity(SeverityLevel.NORMAL)
     public void testSwitchUserMode_ToUser() {
-        Response response = userClient.switchUserMode("USER");
+        // Using no-retry method since we may get 500 if user doesn't have required
+        // roles
+        Response response = userClient.switchUserModeNoRetry("USER");
 
         int statusCode = response.getStatusCode();
         // Accept 200 for success, 400/403/500 for various error conditions
@@ -455,7 +461,8 @@ public class UserTest extends BaseTest {
     @Description("Verify switching user mode to ADMIN requires ADMIN role")
     @Severity(SeverityLevel.NORMAL)
     public void testSwitchUserMode_ToAdmin() {
-        Response response = userClient.switchUserMode("ADMIN");
+        // Using no-retry method since we may get 500 if user doesn't have ADMIN role
+        Response response = userClient.switchUserModeNoRetry("ADMIN");
 
         int statusCode = response.getStatusCode();
         Assert.assertTrue(statusCode == 200 || statusCode == 400 || statusCode == 403 || statusCode == 500,
@@ -468,14 +475,15 @@ public class UserTest extends BaseTest {
     @Description("Verify switching to invalid mode fails")
     @Severity(SeverityLevel.NORMAL)
     public void testSwitchUserMode_InvalidMode() {
-        Response response = userClient.switchUserMode("INVALID_MODE");
+        // Using no-retry method since we expect 400 for invalid mode
+        Response response = userClient.switchUserModeNoRetry("INVALID_MODE");
 
         int statusCode = response.getStatusCode();
-        // API may return 400 (bad request) or 500 (internal error) for invalid mode
+        // Backend validates mode: "Invalid mode. Must be USER or ADMIN" returns 400
         Assert.assertTrue(statusCode == 400 || statusCode == 500,
-                "Status code should be 400 or 500 for invalid mode. Got: " + statusCode);
+                "Status code should be 400 for invalid mode. Got: " + statusCode);
 
-        // Error field should exist in both cases
+        // Error field should exist for validation error
         ResponseValidator.validateFieldExists(response, "error");
     }
 

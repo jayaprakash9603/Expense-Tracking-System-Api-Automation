@@ -411,12 +411,67 @@ public class AuthTest extends BaseTest {
     @Description("Verify email validation with invalid format")
     @Severity(SeverityLevel.MINOR)
     public void testGetUserByEmail_InvalidEmailFormat() {
-        // Act
         Response response = authClient.getUserByEmail("invalid-email-format");
         
-        // Assert
         int statusCode = response.getStatusCode();
         Assert.assertTrue(statusCode == 400 || statusCode == 404 || statusCode == 500, 
                 "Status code should indicate validation error");
+    }
+    
+    @Test(priority = 23, dependsOnMethods = "testGetUserByEmail_Success")
+    @Story("User Retrieval")
+    @Description("Verify getting user by ID using alternate endpoint")
+    @Severity(SeverityLevel.NORMAL)
+    public void testGetUserByIdAlt_Success() {
+        Response response = authClient.getUserByIdAlt(testUserId);
+        
+        ResponseValidator.validateStatusCode(response, 200);
+        ResponseValidator.validateFieldValue(response, "id", testUserId.intValue());
+        ResponseValidator.validateFieldValue(response, "email", testUserEmail);
+    }
+    
+    @Test(priority = 24)
+    @Story("User Retrieval")
+    @Description("Verify getting user by non-existent ID using alternate endpoint returns error")
+    @Severity(SeverityLevel.NORMAL)
+    public void testGetUserByIdAlt_NotFound() {
+        Response response = authClient.getUserByIdAlt(999999L);
+        
+        int statusCode = response.getStatusCode();
+        Assert.assertTrue(statusCode == 404 || statusCode == 500, 
+                "Status code should be 404 or 500 for non-existent user");
+    }
+    
+    @Test(priority = 25, dependsOnMethods = "testSignup_Success")
+    @Story("Password Reset")
+    @Description("Verify password reset with valid email and new password")
+    @Severity(SeverityLevel.CRITICAL)
+    public void testResetPassword_Success() {
+        String newPassword = "NewTest@456";
+        Map<String, String> resetPayload = AuthPayload.createPasswordResetPayload(testUserEmail, newPassword);
+        
+        Response response = authClient.resetPassword(resetPayload);
+        
+        ResponseValidator.validateStatusCode(response, 200);
+        ResponseValidator.validateFieldValue(response, "message", "Password reset successfully");
+        
+        LoginRequest loginRequest = AuthPayload.createLoginRequest(testUserEmail, newPassword);
+        Response loginResponse = authClient.signin(loginRequest);
+        ResponseValidator.validateStatusCode(loginResponse, 200);
+        
+        testUserPassword = newPassword;
+        TestUserCleanupManager.updateUserPassword(testUserEmail, newPassword);
+    }
+    
+    @Test(priority = 26)
+    @Story("Password Reset")
+    @Description("Verify password reset fails for non-existent email")
+    @Severity(SeverityLevel.NORMAL)
+    public void testResetPassword_EmailNotFound() {
+        Map<String, String> resetPayload = AuthPayload.createPasswordResetPayload("nonexistent@example.com", "NewPassword@123");
+        
+        Response response = authClient.resetPassword(resetPayload);
+        
+        ResponseValidator.validateStatusCode(response, 404);
     }
 }

@@ -81,6 +81,11 @@ public class AuthClient extends BaseClient {
         return patch(Endpoints.AUTH.RESET_PASSWORD, resetPayload);
     }
     
+    @Step("Get user by ID (alternate endpoint): {userId}")
+    public Response getUserByIdAlt(Long userId) {
+        return get(replacePath(Endpoints.AUTH.USER_BY_ID_ALT, "userId", userId));
+    }
+    
     @Step("Initiate forgot password for email")
     public Response forgotPassword(Map<String, String> emailPayload) {
         return post(Endpoints.AUTH.FORGOT_PASSWORD, emailPayload);

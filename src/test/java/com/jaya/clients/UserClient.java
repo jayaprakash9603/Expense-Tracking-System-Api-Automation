@@ -1,7 +1,6 @@
 package com.jaya.clients;
 
 import com.jaya.config.ConfigManager;
-import com.jaya.pojo.User;
 import com.jaya.pojo.UserUpdateRequest;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
@@ -110,5 +109,32 @@ public class UserClient extends BaseClient {
                 .replace("{userId}", String.valueOf(userId))
                 .replace("{roleId}", String.valueOf(roleId));
         return delete(endpoint);
+    }
+    
+    @Step("Switch user mode to: {mode}")
+    public Response switchUserMode(String mode) {
+        return given()
+                .spec(requestSpec)
+                .queryParam("mode", mode)
+                .when()
+                .put("/api/user/switch-mode")
+                .then()
+                .log().ifValidationFails()
+                .extract()
+                .response();
+    }
+    
+    @Step("Attempt to switch user mode without authentication")
+    public Response switchUserModeWithoutAuth(String mode) {
+        return given()
+                .contentType("application/json")
+                .baseUri(ConfigManager.getBaseUrl())
+                .queryParam("mode", mode)
+                .when()
+                .put("/api/user/switch-mode")
+                .then()
+                .log().ifValidationFails()
+                .extract()
+                .response();
     }
 }

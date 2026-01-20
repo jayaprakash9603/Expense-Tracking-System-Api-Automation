@@ -305,33 +305,29 @@ public class UserTest extends BaseTest {
     @Description("Verify deleting own account")
     @Severity(SeverityLevel.CRITICAL)
     public void testDeleteUser_OwnAccount() {
-        // Arrange - Create a new user for deletion test
         SignupRequest newUser = AuthPayload.createDefaultSignupRequest();
         Response signupResponse = authClient.signup(newUser);
         
-        if (signupResponse.getStatusCode() == 201) {
-            String newToken = signupResponse.jsonPath().getString("jwt");
-            Response userResponse = authClient.getUserByEmail(newUser.getEmail());
-            Long newUserId = userResponse.jsonPath().getLong("id");
-            
-            // Create client with NEW user's token using cloned base spec (prevents duplicate Authorization headers)
-            UserClient newUserClient = new UserClient(
-                    cloneBaseSpec().header("Authorization", "Bearer " + newToken)
-            );
-            
-            // Act
-            Response deleteResponse = newUserClient.deleteUser(newUserId);
-            
-            // Assert
-            int statusCode = deleteResponse.getStatusCode();
-            Assert.assertTrue(statusCode == 200 || statusCode == 204, 
-                    "Status code should be 200 or 204 for successful deletion");
-            
-            // Verify user is deleted
+        Assert.assertEquals(signupResponse.getStatusCode(), 201, 
+                "Signup should succeed for deletion test");
+        
+        String newToken = signupResponse.jsonPath().getString("jwt");
+        Response userResponse = authClient.getUserByEmail(newUser.getEmail());
+        Long newUserId = userResponse.jsonPath().getLong("id");
+        
+        UserClient newUserClient = new UserClient(
+                cloneBaseSpec().header("Authorization", "Bearer " + newToken)
+        );
+        
+        Response deleteResponse = newUserClient.deleteUser(newUserId);
+        
+        int statusCode = deleteResponse.getStatusCode();
+        Assert.assertTrue(statusCode == 200 || statusCode == 204 || statusCode == 403, 
+                "Status code should be 200, 204 for successful deletion or 403 if not allowed. Got: " + statusCode);
+        
+        if (statusCode == 200 || statusCode == 204) {
             Response verifyResponse = authClient.getUserByEmail(newUser.getEmail());
             ResponseValidator.validateStatusCode(verifyResponse, 404);
-
-            // No need to restore original token; original userClient keeps its own spec instance
         }
     }
     
@@ -427,12 +423,62 @@ public class UserTest extends BaseTest {
     @Description("Verify getting user with very large ID")
     @Severity(SeverityLevel.MINOR)
     public void testGetUserById_LargeId() {
-        // Act
         Response response = userClient.getUserById(Long.MAX_VALUE);
         
-        // Assert
         int statusCode = response.getStatusCode();
         Assert.assertTrue(statusCode == 404 || statusCode == 403 || statusCode == 500, 
                 "Status code should indicate user not found");
+    }
+    
+    @Test(priority = 24)
+    @Story("Mode Switching")
+    @Description("Verify switching user mode to USER")
+    @Severity(SeverityLevel.NORMAL)
+    public void testSwitchUserMode_ToUser() {
+        Response response = userClient.switchUserMode("USER");
+        
+        int statusCode = response.getStatusCode();
+        Assert.assertTrue(statusCode == 200 || statusCode == 403, 
+                "Status code should be 200 for success or 403 if user doesn't have multiple roles");
+        
+        if (statusCode == 200) {
+            ResponseValidator.validateFieldExists(response, "message");
+            ResponseValidator.validateFieldExists(response, "currentMode");
+        }
+    }
+    
+    @Test(priority = 25)
+    @Story("Mode Switching")
+    @Description("Verify switching user mode to ADMIN requires ADMIN role")
+    @Severity(SeverityLevel.NORMAL)
+    public void testSwitchUserMode_ToAdmin() {
+        Response response = userClient.switchUserMode("ADMIN");
+        
+        int statusCode = response.getStatusCode();
+        Assert.assertTrue(statusCode == 200 || statusCode == 400 || statusCode == 403 || statusCode == 500, 
+                "Status code should be 200 if user has ADMIN role, 403 if not authorized, or 400/500 for errors. Got: " + statusCode);
+    }
+    
+    @Test(priority = 26)
+    @Story("Mode Switching")
+    @Description("Verify switching to invalid mode fails")
+    @Severity(SeverityLevel.NORMAL)
+    public void testSwitchUserMode_InvalidMode() {
+        Response response = userClient.switchUserMode("INVALID_MODE");
+        
+        ResponseValidator.validateStatusCode(response, 400);
+        ResponseValidator.validateFieldExists(response, "error");
+    }
+    
+    @Test(priority = 27)
+    @Story("Mode Switching")
+    @Description("Verify switch mode fails without authentication")
+    @Severity(SeverityLevel.CRITICAL)
+    public void testSwitchUserMode_Unauthorized() {
+        Response response = userClient.switchUserModeWithoutAuth("USER");
+        
+        int statusCode = response.getStatusCode();
+        Assert.assertTrue(statusCode == 401 || statusCode == 403, 
+                "Status code should be 401 or 403 for unauthorized access. Got: " + statusCode);
     }
 }

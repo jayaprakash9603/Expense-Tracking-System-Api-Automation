@@ -11,6 +11,7 @@ public final class Endpoints {
         public static final String SIGNIN = BASE + "/signin";
         public static final String REFRESH_TOKEN = BASE + "/refresh-token";
         public static final String USER_BY_ID = BASE + "/user/{userId}";
+        public static final String USER_BY_ID_ALT = BASE + "/{userId}";
         public static final String USER_BY_EMAIL = BASE + "/email";
         public static final String ALL_USERS = BASE + "/all-users";
         public static final String CHECK_EMAIL = BASE + "/check-email";
@@ -31,6 +32,9 @@ public final class Endpoints {
         public static final String DELETE = BASE + "/{id}";
         public static final String ALL = BASE + "/all";
         public static final String SEARCH = BASE + "/search";
+        public static final String ADD_ROLE = BASE + "/{userId}/roles/{roleId}";
+        public static final String REMOVE_ROLE = BASE + "/{userId}/roles/{roleId}";
+        public static final String SWITCH_MODE = BASE + "/switch-mode";
     }
     
     public static final class EXPENSE {
@@ -138,5 +142,31 @@ public final class Endpoints {
         public static final String HEALTH = BASE + "/health";
         public static final String INFO = BASE + "/info";
         public static final String METRICS = BASE + "/metrics";
+    }
+    
+    public static final class ADMIN {
+        private ADMIN() {}
+        public static final String BASE = "/api/admin";
+        public static final String USERS = BASE + "/users";
+        public static final String ALL = BASE + "/all";
+    }
+    
+    public static final class ROLE {
+        private ROLE() {}
+        public static final String BASE = "/api/roles";
+        public static final String CREATE = BASE;
+        public static final String ALL = BASE;
+        public static final String BY_ID = BASE + "/{id}";
+        public static final String BY_NAME = BASE + "/name/{name}";
+        public static final String UPDATE = BASE + "/{id}";
+        public static final String DELETE = BASE + "/{id}";
+    }
+    
+    public static final class DASHBOARD_PREFERENCE {
+        private DASHBOARD_PREFERENCE() {}
+        public static final String BASE = "/api/user/dashboard-preferences";
+        public static final String GET = BASE;
+        public static final String SAVE = BASE;
+        public static final String RESET = BASE;
     }
 }

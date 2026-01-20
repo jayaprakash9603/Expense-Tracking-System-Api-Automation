@@ -22,8 +22,8 @@ public class TestUserCleanupManager {
     public static class TestUser {
         private final Long userId;
         private final String email;
-        private final String password;
-        private final String token;
+        private String password;
+        private String token;
         
         public TestUser(Long userId, String email, String password, String token) {
             this.userId = userId;
@@ -36,6 +36,8 @@ public class TestUserCleanupManager {
         public String getEmail() { return email; }
         public String getPassword() { return password; }
         public String getToken() { return token; }
+        public void setPassword(String password) { this.password = password; }
+        public void setToken(String token) { this.token = token; }
         
         @Override
         public String toString() {
@@ -55,6 +57,18 @@ public class TestUserCleanupManager {
         TestUser user = new TestUser(null, email, password, null);
         createdUsers.add(user);
         System.out.println("[CLEANUP] Registered user for cleanup: " + email + " (Total: " + createdUsers.size() + ")");
+    }
+    
+    @Step("Update password for registered user: {email}")
+    public static void updateUserPassword(String email, String newPassword) {
+        for (TestUser user : createdUsers) {
+            if (user.getEmail().equals(email)) {
+                user.setPassword(newPassword);
+                user.setToken(null);
+                System.out.println("[CLEANUP] Updated password for user: " + email);
+                return;
+            }
+        }
     }
     
     public static List<TestUser> getRegisteredUsers() {

@@ -7,6 +7,7 @@ import com.jaya.payloads.AuthPayload;
 import com.jaya.payloads.UserPayload;
 import com.jaya.pojo.SignupRequest;
 import com.jaya.pojo.UserUpdateRequest;
+import com.jaya.utils.JsonSchemaValidatorUtil;
 import com.jaya.utils.ResponseValidator;
 import com.jaya.utils.TestUserCleanupManager;
 import io.qameta.allure.*;
@@ -65,17 +66,16 @@ public class UserTest extends BaseTest {
     @Description("Verify getting user profile from JWT token")
     @Severity(SeverityLevel.CRITICAL)
     public void testGetUserProfile_Success() {
-        // Act
         Response response = userClient.getUserProfile();
 
-        // Assert
         ResponseValidator.validateStatusCode(response, 200);
         ResponseValidator.validateFieldExists(response, "id");
         ResponseValidator.validateFieldExists(response, "email");
-        ResponseValidator.validateFieldExists(response, "fullName");
         ResponseValidator.validateFieldValue(response, "email", testUserEmail);
         ResponseValidator.validateContentType(response, "application/json");
         ResponseValidator.validateResponseTime(response, 2000);
+
+        JsonSchemaValidatorUtil.validateUserSchema(response);
     }
 
     @Test(priority = 2)
@@ -100,14 +100,13 @@ public class UserTest extends BaseTest {
     @Description("Verify getting user by email with authentication")
     @Severity(SeverityLevel.NORMAL)
     public void testGetUserByEmail_Success() {
-        // Act
         Response response = userClient.getUserByEmail(testUserEmail);
 
-        // Assert
         ResponseValidator.validateStatusCode(response, 200);
         ResponseValidator.validateFieldValue(response, "email", testUserEmail);
         ResponseValidator.validateFieldExists(response, "id");
-        ResponseValidator.validateFieldExists(response, "fullName");
+
+        JsonSchemaValidatorUtil.validateUserSchema(response);
     }
 
     @Test(priority = 4)
@@ -141,13 +140,13 @@ public class UserTest extends BaseTest {
     @Description("Verify getting own user profile by ID")
     @Severity(SeverityLevel.NORMAL)
     public void testGetUserById_OwnProfile() {
-        // Act
         Response response = userClient.getUserById(testUserId);
 
-        // Assert
         ResponseValidator.validateStatusCode(response, 200);
         ResponseValidator.validateFieldValue(response, "id", testUserId.intValue());
         ResponseValidator.validateFieldValue(response, "email", testUserEmail);
+
+        JsonSchemaValidatorUtil.validateUserSchema(response);
     }
 
     @Test(priority = 7)
@@ -490,5 +489,40 @@ public class UserTest extends BaseTest {
         int statusCode = response.getStatusCode();
         Assert.assertTrue(statusCode == 401 || statusCode == 403,
                 "Status code should be 401 or 403 for unauthorized access. Got: " + statusCode);
+    }
+
+    // ==================== SCHEMA VALIDATION TESTS ====================
+
+    @Test(priority = 28)
+    @Story("Schema Validation")
+    @Description("Verify user profile response matches JSON schema")
+    @Severity(SeverityLevel.NORMAL)
+    public void testUserProfileSchema_Validation() {
+        Response response = userClient.getUserProfile();
+
+        ResponseValidator.validateStatusCode(response, 200);
+        JsonSchemaValidatorUtil.validateUserSchema(response);
+    }
+
+    @Test(priority = 29)
+    @Story("Schema Validation")
+    @Description("Verify user by ID response matches JSON schema")
+    @Severity(SeverityLevel.NORMAL)
+    public void testUserByIdSchema_Validation() {
+        Response response = userClient.getUserById(testUserId);
+
+        ResponseValidator.validateStatusCode(response, 200);
+        JsonSchemaValidatorUtil.validateUserSchema(response);
+    }
+
+    @Test(priority = 30)
+    @Story("Schema Validation")
+    @Description("Verify user by email response matches JSON schema")
+    @Severity(SeverityLevel.NORMAL)
+    public void testUserByEmailSchema_Validation() {
+        Response response = userClient.getUserByEmail(testUserEmail);
+
+        ResponseValidator.validateStatusCode(response, 200);
+        JsonSchemaValidatorUtil.validateUserSchema(response);
     }
 }

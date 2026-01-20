@@ -19,71 +19,37 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Listeners;
 
-/**
- * BaseTest - Foundation class for all API tests
- * Provides request specifications, authentication helpers, and test lifecycle
- * management
- */
 @Listeners(TestListener.class)
 public class BaseTest {
 
     protected static final Logger log = LoggerFactory.getLogger(BaseTest.class);
-
     protected static RequestSpecification requestSpec;
-    protected static RequestSpecification authenticatedSpec;
 
     @BeforeSuite(alwaysRun = true)
     public void suiteSetup() {
         log.info("Initializing test suite...");
         ConfigManager.printConfiguration();
-
-        // Configure RestAssured global settings
-        RestAssured.baseURI = ConfigManager.getBaseUrl();
-        RestAssuredConfig config = RestAssuredConfig.config()
-                .httpClient(HttpClientConfig.httpClientConfig()
-                        .setParam("http.connection.timeout", ConfigManager.getConnectionTimeout())
-                        .setParam("http.socket.timeout", ConfigManager.getResponseTimeout()));
-        RestAssured.config = config;
-
+        configureRestAssured();
         log.info("Test suite initialization complete");
     }
 
     @BeforeClass(alwaysRun = true)
     public void setup() {
         log.debug("Setting up test class: {}", getClass().getSimpleName());
-
-        RequestSpecBuilder builder = new RequestSpecBuilder();
-        builder.setBaseUri(ConfigManager.getBaseUrl());
-        builder.setContentType(ContentType.JSON);
-        builder.setAccept(ContentType.JSON);
-        builder.addFilter(new AllureRestAssured());
-
-        if (ConfigManager.isRequestLoggingEnabled()) {
-            builder.log(LogDetail.ALL);
-        }
-
-        requestSpec = builder.build();
+        requestSpec = buildBaseRequestSpec();
     }
 
     @AfterSuite(alwaysRun = true)
     public void suiteTeardown() {
         log.info("Starting test suite cleanup...");
-
-        // Cleanup all test users created during test execution
         TestUserCleanupManager.cleanupAllUsers();
-
-        // Clear token cache
         TokenManager.clearToken();
-
-        // Reset RestAssured to defaults
         RestAssured.reset();
-
         log.info("Test suite cleanup complete");
     }
 
-    /**
-     * Get authenticated request specification with Bearer token
-     */
+    // ==================== REQUEST SPEC BUILDERS ====================
+
     protected RequestSpecification getAuthenticatedRequest() {
         return new RequestSpecBuilder()
                 .addRequestSpecification(requestSpec)
@@ -91,16 +57,10 @@ public class BaseTest {
                 .build();
     }
 
-    /**
-     * Get unauthenticated request specification
-     */
     protected RequestSpecification getUnauthenticatedRequest() {
         return requestSpec;
     }
 
-    /**
-     * Get request specification with custom token
-     */
     protected RequestSpecification getRequestWithToken(String token) {
         return new RequestSpecBuilder()
                 .addRequestSpecification(requestSpec)
@@ -108,9 +68,6 @@ public class BaseTest {
                 .build();
     }
 
-    /**
-     * Get request specification with custom header
-     */
     protected RequestSpecification getRequestWithHeader(String headerName, String headerValue) {
         return new RequestSpecBuilder()
                 .addRequestSpecification(requestSpec)
@@ -118,32 +75,44 @@ public class BaseTest {
                 .build();
     }
 
-    /**
-     * Clone base spec - creates independent copy to prevent mutation of shared spec
-     */
     protected RequestSpecBuilder cloneBaseSpec() {
-        return new RequestSpecBuilder()
-                .addRequestSpecification(requestSpec);
+        return new RequestSpecBuilder().addRequestSpecification(requestSpec);
     }
 
-    /**
-     * Get configured base URL
-     */
+    // ==================== CONFIG ACCESSORS ====================
+
     protected String getBaseUrl() {
         return ConfigManager.getBaseUrl();
     }
 
-    /**
-     * Get current environment name
-     */
     protected String getEnvironment() {
         return ConfigManager.getEnvironment();
     }
 
-    /**
-     * Check if running in CI environment
-     */
     protected boolean isCI() {
         return ConfigManager.isCI();
+    }
+
+    // ==================== PRIVATE HELPERS ====================
+
+    private void configureRestAssured() {
+        RestAssured.baseURI = ConfigManager.getBaseUrl();
+        RestAssured.config = RestAssuredConfig.config()
+                .httpClient(HttpClientConfig.httpClientConfig()
+                        .setParam("http.connection.timeout", ConfigManager.getConnectionTimeout())
+                        .setParam("http.socket.timeout", ConfigManager.getResponseTimeout()));
+    }
+
+    private RequestSpecification buildBaseRequestSpec() {
+        RequestSpecBuilder builder = new RequestSpecBuilder()
+                .setBaseUri(ConfigManager.getBaseUrl())
+                .setContentType(ContentType.JSON)
+                .setAccept(ContentType.JSON)
+                .addFilter(new AllureRestAssured());
+
+        if (ConfigManager.isRequestLoggingEnabled()) {
+            builder.log(LogDetail.ALL);
+        }
+        return builder.build();
     }
 }

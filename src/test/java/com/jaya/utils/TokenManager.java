@@ -10,38 +10,24 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * TokenManager - Thread-safe JWT token management for API authentication
- * Handles token caching, refresh, and expiry with support for parallel test
- * execution
- */
 public final class TokenManager {
 
     private static final Logger log = LoggerFactory.getLogger(TokenManager.class);
+    private static final int TOKEN_VALIDITY_MINUTES = 30;
+    private static final int TOKEN_BUFFER_MINUTES = 2;
+    private static final ReentrantLock tokenLock = new ReentrantLock();
 
     private static volatile String cachedToken;
     private static volatile LocalDateTime tokenExpiryTime;
-    private static final int TOKEN_VALIDITY_MINUTES = 30;
-    private static final int TOKEN_BUFFER_MINUTES = 2;
 
-    // Lock for thread-safe token refresh
-    private static final ReentrantLock tokenLock = new ReentrantLock();
-
-    // Private constructor to prevent instantiation
     private TokenManager() {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 
-    /**
-     * Get valid authentication token - thread-safe
-     * Automatically refreshes if expired or about to expire
-     */
     public static String getToken() {
-        // Double-checked locking pattern for performance
         if (isTokenExpired()) {
             tokenLock.lock();
             try {
-                // Check again after acquiring lock
                 if (isTokenExpired()) {
                     refreshToken();
                 }
@@ -52,9 +38,40 @@ public final class TokenManager {
         return cachedToken;
     }
 
-    /**
-     * Check if token is expired or will expire within buffer time
-     */
+    public static void clearToken() {
+        tokenLock.lock();
+        try {
+            cachedToken = null;
+            tokenExpiryTime = null;
+            log.debug("Token cache cleared");
+        } finally {
+            tokenLock.unlock();
+        }
+    }
+
+    public static void setToken(String token) {
+        setToken(token, TOKEN_VALIDITY_MINUTES);
+    }
+
+    public static void setToken(String token, int validityMinutes) {
+        tokenLock.lock();
+        try {
+            cachedToken = token;
+            tokenExpiryTime = LocalDateTime.now().plus(validityMinutes, ChronoUnit.MINUTES);
+            log.debug("Token set. Valid until: {}", tokenExpiryTime);
+        } finally {
+            tokenLock.unlock();
+        }
+    }
+
+    public static boolean hasValidToken() {
+        return cachedToken != null && !isTokenExpired();
+    }
+
+    public static LocalDateTime getTokenExpiryTime() {
+        return tokenExpiryTime;
+    }
+
     private static boolean isTokenExpired() {
         if (cachedToken == null || tokenExpiryTime == null) {
             return true;
@@ -63,9 +80,6 @@ public final class TokenManager {
         return bufferTime.isAfter(tokenExpiryTime);
     }
 
-    /**
-     * Refresh token by authenticating with configured credentials
-     */
     private static void refreshToken() {
         log.info("Refreshing authentication token...");
 
@@ -73,8 +87,7 @@ public final class TokenManager {
         String password = ConfigManager.getPassword();
 
         if (username == null || password == null) {
-            throw new RuntimeException("Authentication credentials not configured. " +
-                    "Please set auth.username and auth.password in config.properties");
+            throw new RuntimeException("Authentication credentials not configured");
         }
 
         try {
@@ -89,8 +102,8 @@ public final class TokenManager {
                     .response();
 
             if (response.getStatusCode() != 200) {
-                log.error("Token refresh failed with status: {} - {}",
-                        response.getStatusCode(), response.getBody().asString());
+                log.error("Token refresh failed. Status: {} - {}", response.getStatusCode(),
+                        response.getBody().asString());
                 throw new RuntimeException("Failed to authenticate. Status: " + response.getStatusCode());
             }
 
@@ -109,66 +122,7 @@ public final class TokenManager {
         }
     }
 
-    /**
-     * Build JSON login payload
-     */
     private static String buildLoginPayload(String email, String password) {
         return String.format("{\"email\":\"%s\",\"password\":\"%s\"}", email, password);
-    }
-
-    /**
-     * Clear cached token - useful for testing token expiry scenarios
-     */
-    public static void clearToken() {
-        tokenLock.lock();
-        try {
-            cachedToken = null;
-            tokenExpiryTime = null;
-            log.debug("Token cache cleared");
-        } finally {
-            tokenLock.unlock();
-        }
-    }
-
-    /**
-     * Manually set token - useful for test user tokens
-     */
-    public static void setToken(String token) {
-        tokenLock.lock();
-        try {
-            cachedToken = token;
-            tokenExpiryTime = LocalDateTime.now().plus(TOKEN_VALIDITY_MINUTES, ChronoUnit.MINUTES);
-            log.debug("Token manually set. Valid until: {}", tokenExpiryTime);
-        } finally {
-            tokenLock.unlock();
-        }
-    }
-
-    /**
-     * Set token with custom validity duration
-     */
-    public static void setToken(String token, int validityMinutes) {
-        tokenLock.lock();
-        try {
-            cachedToken = token;
-            tokenExpiryTime = LocalDateTime.now().plus(validityMinutes, ChronoUnit.MINUTES);
-            log.debug("Token manually set with {}min validity. Valid until: {}", validityMinutes, tokenExpiryTime);
-        } finally {
-            tokenLock.unlock();
-        }
-    }
-
-    /**
-     * Check if a valid token exists
-     */
-    public static boolean hasValidToken() {
-        return cachedToken != null && !isTokenExpired();
-    }
-
-    /**
-     * Get token expiry time
-     */
-    public static LocalDateTime getTokenExpiryTime() {
-        return tokenExpiryTime;
     }
 }

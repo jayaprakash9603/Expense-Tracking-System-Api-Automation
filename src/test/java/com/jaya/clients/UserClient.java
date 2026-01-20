@@ -1,41 +1,25 @@
 package com.jaya.clients;
 
-import com.jaya.config.ConfigManager;
 import com.jaya.constants.Endpoints;
 import com.jaya.pojo.UserUpdateRequest;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 
-import java.util.Map;
-
-import static io.restassured.RestAssured.given;
-
-/**
- * UserClient - API client for user management operations
- */
 public class UserClient extends BaseClient {
 
     public UserClient(RequestSpecification requestSpec) {
         super(requestSpec);
     }
 
-    @Step("Get user profile from JWT")
+    @Step("Get user profile")
     public Response getUserProfile() {
         return get(Endpoints.USER.PROFILE);
     }
 
-    @Step("Attempt to get user profile without authentication")
+    @Step("Get user profile without auth")
     public Response getUserProfileWithoutAuth() {
-        return given()
-                .contentType("application/json")
-                .baseUri(ConfigManager.getBaseUrl())
-                .when()
-                .get(Endpoints.USER.PROFILE)
-                .then()
-                .log().ifValidationFails()
-                .extract()
-                .response();
+        return unauthenticatedGet(Endpoints.USER.PROFILE);
     }
 
     @Step("Get user by email: {email}")
@@ -53,36 +37,19 @@ public class UserClient extends BaseClient {
         return put(Endpoints.USER.UPDATE, updateRequest);
     }
 
-    @Step("Attempt to update user profile without authentication")
+    @Step("Update user without auth")
     public Response updateUserWithoutAuth(UserUpdateRequest updateRequest) {
-        return given()
-                .contentType("application/json")
-                .baseUri(ConfigManager.getBaseUrl())
-                .body(updateRequest)
-                .when()
-                .put(Endpoints.USER.UPDATE)
-                .then()
-                .log().ifValidationFails()
-                .extract()
-                .response();
+        return unauthenticatedPut(Endpoints.USER.UPDATE, updateRequest);
     }
 
-    @Step("Delete user by ID: {userId}")
+    @Step("Delete user ID: {userId}")
     public Response deleteUser(Long userId) {
         return deleteWithPathParam(Endpoints.USER.DELETE, "id", userId);
     }
 
-    @Step("Attempt to delete user without authentication")
+    @Step("Delete user without auth")
     public Response deleteUserWithoutAuth(Long userId) {
-        return given()
-                .contentType("application/json")
-                .baseUri(ConfigManager.getBaseUrl())
-                .when()
-                .delete(replacePath(Endpoints.USER.DELETE, "id", userId))
-                .then()
-                .log().ifValidationFails()
-                .extract()
-                .response();
+        return unauthenticatedDelete(replacePath(Endpoints.USER.DELETE, "id", userId));
     }
 
     @Step("Get all users")
@@ -90,23 +57,19 @@ public class UserClient extends BaseClient {
         return get(Endpoints.USER.ALL);
     }
 
-    @Step("Search users with query: {searchQuery}")
+    @Step("Search users: {searchQuery}")
     public Response searchUsers(String searchQuery) {
         return getWithQueryParam(Endpoints.USER.SEARCH, "query", searchQuery);
     }
 
     @Step("Add role {roleId} to user {userId}")
     public Response addRoleToUser(Long userId, Long roleId) {
-        return postWithPathParam(
-                replacePath(Endpoints.USER.ADD_ROLE, "userId", userId),
-                "roleId", roleId, "");
+        return postWithPathParam(replacePath(Endpoints.USER.ADD_ROLE, "userId", userId), "roleId", roleId, "");
     }
 
     @Step("Remove role {roleId} from user {userId}")
     public Response removeRoleFromUser(Long userId, Long roleId) {
-        return deleteWithPathParam(
-                replacePath(Endpoints.USER.REMOVE_ROLE, "userId", userId),
-                "roleId", roleId);
+        return deleteWithPathParam(replacePath(Endpoints.USER.REMOVE_ROLE, "userId", userId), "roleId", roleId);
     }
 
     @Step("Switch user mode to: {mode}")
@@ -114,17 +77,8 @@ public class UserClient extends BaseClient {
         return putWithQueryParam(Endpoints.USER.SWITCH_MODE, "mode", mode, "");
     }
 
-    @Step("Attempt to switch user mode without authentication")
+    @Step("Switch user mode without auth")
     public Response switchUserModeWithoutAuth(String mode) {
-        return given()
-                .contentType("application/json")
-                .baseUri(ConfigManager.getBaseUrl())
-                .queryParam("mode", mode)
-                .when()
-                .put(Endpoints.USER.SWITCH_MODE)
-                .then()
-                .log().ifValidationFails()
-                .extract()
-                .response();
+        return unauthenticatedPutWithQueryParam(Endpoints.USER.SWITCH_MODE, "mode", mode);
     }
 }

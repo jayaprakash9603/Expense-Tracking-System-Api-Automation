@@ -1,6 +1,8 @@
 package com.jaya.clients;
 
 import com.jaya.config.ConfigManager;
+import com.jaya.utils.RequestResponseLogger;
+import com.jaya.utils.TestContext;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
@@ -14,27 +16,188 @@ import java.util.function.Supplier;
 import static io.restassured.RestAssured.given;
 
 /**
- * BaseClient - Abstract base class for all API clients
- * Provides common HTTP methods with retry mechanism and logging
+ * Base client providing common HTTP operations with retry logic and detailed
+ * logging.
+ * All API clients should extend this class to inherit consistent behavior.
  */
 public abstract class BaseClient {
 
     private static final Logger log = LoggerFactory.getLogger(BaseClient.class);
+    private static final long RETRY_DELAY_MS = 1000L;
 
     protected RequestSpecification requestSpec;
     private final int maxRetries;
-    private final long retryDelayMs;
 
-    public BaseClient(RequestSpecification requestSpec) {
+    protected BaseClient(RequestSpecification requestSpec) {
         this.requestSpec = requestSpec;
         this.maxRetries = ConfigManager.getRetryCount();
-        this.retryDelayMs = 1000L;
+    }
+
+    // ==================== GET METHODS ====================
+
+    @Step("GET {endpoint}")
+    protected Response get(String endpoint) {
+        return executeWithLogging("GET", endpoint, null, () -> request().get(endpoint));
+    }
+
+    @Step("GET {endpoint} with path param {paramName}={paramValue}")
+    protected Response getWithPathParam(String endpoint, String paramName, Object paramValue) {
+        return executeWithLogging("GET", endpoint, null,
+                () -> request().pathParam(paramName, paramValue).get(endpoint));
+    }
+
+    @Step("GET {endpoint} with path params")
+    protected Response getWithPathParams(String endpoint, Map<String, Object> pathParams) {
+        return executeWithLogging("GET", endpoint, null,
+                () -> request().pathParams(pathParams).get(endpoint));
+    }
+
+    @Step("GET {endpoint} with query param {paramName}={paramValue}")
+    protected Response getWithQueryParam(String endpoint, String paramName, Object paramValue) {
+        return executeWithLogging("GET", endpoint, null,
+                () -> request().queryParam(paramName, paramValue).get(endpoint));
+    }
+
+    @Step("GET {endpoint} with query params")
+    protected Response getWithQueryParams(String endpoint, Map<String, Object> queryParams) {
+        return executeWithLogging("GET", endpoint, null,
+                () -> request().queryParams(queryParams).get(endpoint));
+    }
+
+    // ==================== POST METHODS ====================
+
+    @Step("POST {endpoint}")
+    protected Response post(String endpoint, Object body) {
+        return executeWithLogging("POST", endpoint, body,
+                () -> request().body(body).post(endpoint));
+    }
+
+    @Step("POST {endpoint}")
+    protected Response postWithoutBody(String endpoint) {
+        return executeWithLogging("POST", endpoint, null,
+                () -> request().post(endpoint));
+    }
+
+    @Step("POST {endpoint} with path param {paramName}={paramValue}")
+    protected Response postWithPathParam(String endpoint, String paramName, Object paramValue, Object body) {
+        return executeWithLogging("POST", endpoint, body,
+                () -> request().pathParam(paramName, paramValue).body(body).post(endpoint));
+    }
+
+    // ==================== PUT METHODS ====================
+
+    @Step("PUT {endpoint}")
+    protected Response put(String endpoint, Object body) {
+        return executeWithLogging("PUT", endpoint, body,
+                () -> request().body(body).put(endpoint));
+    }
+
+    @Step("PUT {endpoint} with path param {paramName}={paramValue}")
+    protected Response putWithPathParam(String endpoint, String paramName, Object paramValue, Object body) {
+        return executeWithLogging("PUT", endpoint, body,
+                () -> request().pathParam(paramName, paramValue).body(body).put(endpoint));
+    }
+
+    @Step("PUT {endpoint} with query param {paramName}={paramValue}")
+    protected Response putWithQueryParam(String endpoint, String paramName, Object paramValue, Object body) {
+        return executeWithLogging("PUT", endpoint, body,
+                () -> request().queryParam(paramName, paramValue).body(body).put(endpoint));
+    }
+
+    // ==================== DELETE METHODS ====================
+
+    @Step("DELETE {endpoint}")
+    protected Response delete(String endpoint) {
+        return executeWithLogging("DELETE", endpoint, null,
+                () -> request().delete(endpoint));
+    }
+
+    @Step("DELETE {endpoint} with path param {paramName}={paramValue}")
+    protected Response deleteWithPathParam(String endpoint, String paramName, Object paramValue) {
+        return executeWithLogging("DELETE", endpoint, null,
+                () -> request().pathParam(paramName, paramValue).delete(endpoint));
+    }
+
+    // ==================== PATCH METHODS ====================
+
+    @Step("PATCH {endpoint}")
+    protected Response patch(String endpoint, Object body) {
+        return executeWithLogging("PATCH", endpoint, body,
+                () -> request().body(body).patch(endpoint));
+    }
+
+    @Step("PATCH {endpoint} with path param {paramName}={paramValue}")
+    protected Response patchWithPathParam(String endpoint, String paramName, Object paramValue, Object body) {
+        return executeWithLogging("PATCH", endpoint, body,
+                () -> request().pathParam(paramName, paramValue).body(body).patch(endpoint));
+    }
+
+    // ==================== UNAUTHENTICATED REQUESTS (DRY) ====================
+
+    protected Response unauthenticatedGet(String endpoint) {
+        String requestId = TestContext.registerRequest();
+        log.debug("[{}] Unauthenticated GET {}", requestId, endpoint);
+        return unauthenticatedRequest().get(endpoint).then().log().ifValidationFails().extract().response();
+    }
+
+    protected Response unauthenticatedPost(String endpoint, Object body) {
+        String requestId = TestContext.registerRequest();
+        log.debug("[{}] Unauthenticated POST {} with body", requestId, endpoint);
+        return unauthenticatedRequest().body(body).post(endpoint).then().log().ifValidationFails().extract().response();
+    }
+
+    protected Response unauthenticatedPut(String endpoint, Object body) {
+        String requestId = TestContext.registerRequest();
+        log.debug("[{}] Unauthenticated PUT {} with body", requestId, endpoint);
+        return unauthenticatedRequest().body(body).put(endpoint).then().log().ifValidationFails().extract().response();
+    }
+
+    protected Response unauthenticatedDelete(String endpoint) {
+        String requestId = TestContext.registerRequest();
+        log.debug("[{}] Unauthenticated DELETE {}", requestId, endpoint);
+        return unauthenticatedRequest().delete(endpoint).then().log().ifValidationFails().extract().response();
+    }
+
+    protected Response unauthenticatedPutWithQueryParam(String endpoint, String paramName, Object paramValue) {
+        String requestId = TestContext.registerRequest();
+        log.debug("[{}] Unauthenticated PUT {} with query param {}={}", requestId, endpoint, paramName, paramValue);
+        return unauthenticatedRequest().queryParam(paramName, paramValue).put(endpoint)
+                .then().log().ifValidationFails().extract().response();
+    }
+
+    // ==================== UTILITIES ====================
+
+    protected String replacePath(String endpoint, String paramName, Object paramValue) {
+        return endpoint.replace("{" + paramName + "}", String.valueOf(paramValue));
+    }
+
+    public void updateRequestSpec(RequestSpecification newSpec) {
+        this.requestSpec = newSpec;
+    }
+
+    // ==================== PRIVATE HELPERS ====================
+
+    private RequestSpecification request() {
+        return given().spec(requestSpec).when();
+    }
+
+    private RequestSpecification unauthenticatedRequest() {
+        return given().contentType("application/json").baseUri(ConfigManager.getBaseUrl()).when();
     }
 
     /**
-     * Execute request with retry mechanism for transient failures
+     * Executes an HTTP request with detailed logging, retry logic, and correlation
+     * tracking.
      */
-    protected Response executeWithRetry(Supplier<Response> requestSupplier, String operationName) {
+    private Response executeWithLogging(String method, String endpoint, Object body,
+            Supplier<Response> requestSupplier) {
+        String requestId = TestContext.registerRequest();
+        String operation = method + " " + endpoint;
+        long startTime = System.currentTimeMillis();
+
+        // Log request details
+        RequestResponseLogger.logRequest(requestId, method, endpoint, requestSpec, body);
+
         int attempt = 0;
         Response response = null;
         Exception lastException = null;
@@ -42,253 +205,85 @@ public abstract class BaseClient {
         while (attempt < maxRetries) {
             attempt++;
             try {
-                response = requestSupplier.get();
+                ValidatableResponse validatable = requestSupplier.get().then();
+                applyLogging(validatable);
+                response = validatable.extract().response();
 
-                // Don't retry on client errors (4xx) - these are expected failures
+                long duration = System.currentTimeMillis() - startTime;
+
                 if (response.getStatusCode() < 500) {
+                    // Log successful response
+                    RequestResponseLogger.logResponse(requestId, response, duration);
+
+                    // Log summary for quick debugging
+                    if (response.getStatusCode() >= 400) {
+                        log.warn("[{}] {} completed with client error {} in {}ms",
+                                requestId, operation, response.getStatusCode(), duration);
+                    } else {
+                        log.info("[{}] {} completed successfully {} in {}ms",
+                                requestId, operation, response.getStatusCode(), duration);
+                    }
                     return response;
                 }
 
-                // Retry on server errors (5xx)
+                // Server error - log and retry
                 if (attempt < maxRetries) {
-                    log.warn("{} returned status {}, retrying ({}/{})",
-                            operationName, response.getStatusCode(), attempt, maxRetries);
-                    Thread.sleep(retryDelayMs * attempt); // Exponential backoff
+                    String errorBody = extractErrorMessage(response);
+                    RequestResponseLogger.logRetry(requestId, operation, attempt, maxRetries,
+                            response.getStatusCode(), errorBody);
+                    sleep(RETRY_DELAY_MS * attempt);
                 }
             } catch (Exception e) {
                 lastException = e;
-                log.error("{} failed on attempt {}/{}: {}",
-                        operationName, attempt, maxRetries, e.getMessage());
+                RequestResponseLogger.logRequestFailure(requestId, operation, e);
+
                 if (attempt < maxRetries) {
-                    try {
-                        Thread.sleep(retryDelayMs * attempt);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
+                    log.warn("[{}] Retrying after exception ({}/{})", requestId, attempt, maxRetries);
+                    sleep(RETRY_DELAY_MS * attempt);
                 }
             }
         }
 
+        // Log final response if we have one
         if (response != null) {
+            long duration = System.currentTimeMillis() - startTime;
+            RequestResponseLogger.logResponse(requestId, response, duration);
+            log.error("[{}] {} failed after {} retries with status {}",
+                    requestId, operation, maxRetries, response.getStatusCode());
             return response;
         }
 
-        throw new RuntimeException("Request failed after " + maxRetries + " attempts: " + operationName, lastException);
+        throw new RuntimeException("Request failed after " + maxRetries + " attempts: " + operation, lastException);
     }
 
-    @Step("GET {endpoint}")
-    protected Response get(String endpoint) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .when()
-                    .get(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "GET " + endpoint);
+    /**
+     * Extracts a meaningful error message from the response body.
+     */
+    private String extractErrorMessage(Response response) {
+        try {
+            String body = response.getBody().asString();
+            if (body != null && !body.isEmpty()) {
+                // Try to extract message field from JSON
+                if (body.contains("\"message\"")) {
+                    String message = response.jsonPath().getString("message");
+                    if (message != null)
+                        return message;
+                }
+                if (body.contains("\"error\"")) {
+                    String error = response.jsonPath().getString("error");
+                    if (error != null)
+                        return error;
+                }
+                // Return truncated body if no message field
+                return body.length() > 100 ? body.substring(0, 100) + "..." : body;
+            }
+        } catch (Exception e) {
+            log.trace("Could not extract error message: {}", e.getMessage());
+        }
+        return "Status " + response.getStatusCode();
     }
 
-    @Step("GET {endpoint} with path param {pathParamName}={pathParamValue}")
-    protected Response getWithPathParam(String endpoint, String pathParamName, Object pathParamValue) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .pathParam(pathParamName, pathParamValue)
-                    .when()
-                    .get(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "GET " + endpoint);
-    }
-
-    @Step("GET {endpoint} with path params")
-    protected Response getWithPathParams(String endpoint, Map<String, Object> pathParams) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .pathParams(pathParams)
-                    .when()
-                    .get(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "GET " + endpoint);
-    }
-
-    @Step("GET {endpoint} with query params")
-    protected Response getWithQueryParams(String endpoint, Map<String, Object> queryParams) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .queryParams(queryParams)
-                    .when()
-                    .get(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "GET " + endpoint);
-    }
-
-    @Step("GET {endpoint} with query param {paramName}={paramValue}")
-    protected Response getWithQueryParam(String endpoint, String paramName, Object paramValue) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .queryParam(paramName, paramValue)
-                    .when()
-                    .get(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "GET " + endpoint);
-    }
-
-    @Step("POST {endpoint}")
-    protected Response post(String endpoint, Object body) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .body(body)
-                    .when()
-                    .post(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "POST " + endpoint);
-    }
-
-    @Step("POST {endpoint} (no body)")
-    protected Response postWithoutBody(String endpoint) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .when()
-                    .post(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "POST " + endpoint);
-    }
-
-    @Step("POST {endpoint} with path param {pathParamName}={pathParamValue}")
-    protected Response postWithPathParam(String endpoint, String pathParamName, Object pathParamValue, Object body) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .pathParam(pathParamName, pathParamValue)
-                    .body(body)
-                    .when()
-                    .post(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "POST " + endpoint);
-    }
-
-    @Step("PUT {endpoint}")
-    protected Response put(String endpoint, Object body) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .body(body)
-                    .when()
-                    .put(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "PUT " + endpoint);
-    }
-
-    @Step("PUT {endpoint} with path param {pathParamName}={pathParamValue}")
-    protected Response putWithPathParam(String endpoint, String pathParamName, Object pathParamValue, Object body) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .pathParam(pathParamName, pathParamValue)
-                    .body(body)
-                    .when()
-                    .put(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "PUT " + endpoint);
-    }
-
-    @Step("PUT {endpoint} with query param {paramName}={paramValue}")
-    protected Response putWithQueryParam(String endpoint, String paramName, Object paramValue, Object body) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .queryParam(paramName, paramValue)
-                    .body(body)
-                    .when()
-                    .put(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "PUT " + endpoint);
-    }
-
-    @Step("DELETE {endpoint}")
-    protected Response delete(String endpoint) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .when()
-                    .delete(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "DELETE " + endpoint);
-    }
-
-    @Step("DELETE {endpoint} with path param {pathParamName}={pathParamValue}")
-    protected Response deleteWithPathParam(String endpoint, String pathParamName, Object pathParamValue) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .pathParam(pathParamName, pathParamValue)
-                    .when()
-                    .delete(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "DELETE " + endpoint);
-    }
-
-    @Step("PATCH {endpoint}")
-    protected Response patch(String endpoint, Object body) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .body(body)
-                    .when()
-                    .patch(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "PATCH " + endpoint);
-    }
-
-    @Step("PATCH {endpoint} with path param {pathParamName}={pathParamValue}")
-    protected Response patchWithPathParam(String endpoint, String pathParamName, Object pathParamValue, Object body) {
-        return executeWithRetry(() -> {
-            ValidatableResponse validatable = given()
-                    .spec(requestSpec)
-                    .pathParam(pathParamName, pathParamValue)
-                    .body(body)
-                    .when()
-                    .patch(endpoint)
-                    .then();
-            applyConditionalResponseLogging(validatable);
-            return validatable.extract().response();
-        }, "PATCH " + endpoint);
-    }
-
-    private void applyConditionalResponseLogging(ValidatableResponse validatable) {
+    private void applyLogging(ValidatableResponse validatable) {
         if (ConfigManager.isResponseLoggingEnabled()) {
             validatable.log().all();
         } else {
@@ -296,17 +291,11 @@ public abstract class BaseClient {
         }
     }
 
-    /**
-     * Replace path parameter placeholder in endpoint
-     */
-    protected String replacePath(String endpoint, String paramName, Object paramValue) {
-        return endpoint.replace("{" + paramName + "}", String.valueOf(paramValue));
-    }
-
-    /**
-     * Update request specification (useful for changing auth tokens)
-     */
-    public void updateRequestSpec(RequestSpecification newSpec) {
-        this.requestSpec = newSpec;
+    private void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

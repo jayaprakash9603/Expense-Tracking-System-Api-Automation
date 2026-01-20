@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "User List Schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "email"],
+    "properties": {
+      "id": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "fullName": {
+        "type": ["string", "null"],
+        "maxLength": 255
+      },
+      "email": {
+        "type": "string",
+        "format": "email",
+        "maxLength": 255
+      },
+      "phoneNumber": {
+        "type": ["string", "null"]
+      },
+      "username": {
+        "type": ["string", "null"]
+      },
+      "website": {
+        "type": ["string", "null"]
+      },
+      "location": {
+        "type": ["string", "null"]
+      },
+      "bio": {
+        "type": ["string", "null"]
+      },
+      "profileImage": {
+        "type": ["string", "null"]
+      },
+      "coverImage": {
+        "type": ["string", "null"]
+      },
+      "mobile": {
+        "type": ["string", "null"]
+      },
+      "occupation": {
+        "type": ["string", "null"]
+      },
+      "dateOfBirth": {
+        "type": ["string", "null"]
+      },
+      "firstName": {
+        "type": ["string", "null"]
+      },
+      "lastName": {
+        "type": ["string", "null"]
+      },
+      "gender": {
+        "type": ["string", "null"]
+      },
+      "roles": {
+        "type": ["array", "null"],
+        "items": {
+          "type": "string"
+        }
+      },
+      "currentMode": {
+        "type": ["string", "null"]
+      },
+      "createdAt": {
+        "type": ["string", "null"]
+      },
+      "updatedAt": {
+        "type": ["string", "null"]
+      },
+      "validForUpdate": {
+        "type": ["boolean", "null"]
+      }
+    },
+    "additionalProperties": true
+  }
+}

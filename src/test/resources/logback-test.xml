@@ -1,43 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     
-    <!-- Console Appender -->
+    <!-- Console Appender - Optimized for readability -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{20}) - %msg%n</pattern>
         </encoder>
     </appender>
     
-    <!-- File Appender -->
+    <!-- File Appender - Detailed logging with MDC context -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>target/logs/api-automation.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>target/logs/api-automation.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>10MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxFileSize>10MB</maxFileSize>
             <maxHistory>30</maxHistory>
             <totalSizeCap>100MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{testId:-INIT}] [%X{requestId:-}] %-5level %logger{50} - %msg%n</pattern>
         </encoder>
     </appender>
     
-    <!-- Framework loggers -->
+    <!-- Detailed Debug File - For troubleshooting -->
+    <appender name="DEBUG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>target/logs/api-automation-debug.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>target/logs/api-automation-debug.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>200MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [Test:%X{testId:-INIT}] [Req:%X{requestId:-}] %-5level %logger{60} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- Framework loggers - Detailed for our code -->
     <logger name="com.jaya" level="DEBUG"/>
+    <logger name="com.jaya.utils.RequestResponseLogger" level="DEBUG"/>
+    <logger name="com.jaya.utils.TestContext" level="DEBUG"/>
+    <logger name="com.jaya.utils.TestListener" level="INFO"/>
+    <logger name="com.jaya.clients" level="DEBUG"/>
     
     <!-- REST Assured logging (reduce verbosity) -->
     <logger name="io.restassured" level="WARN"/>
+    <logger name="io.restassured.filter" level="INFO"/>
     
     <!-- Suppress noisy loggers -->
     <logger name="org.apache.http" level="WARN"/>
     <logger name="org.apache.http.wire" level="ERROR"/>
+    <logger name="org.apache.http.headers" level="WARN"/>
     
     <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
+        <appender-ref ref="DEBUG_FILE"/>
     </root>
     
 </configuration>

@@ -7,6 +7,8 @@ import com.jaya.payloads.AuthPayload;
 import com.jaya.payloads.RolePayload;
 import com.jaya.pojo.RoleRequest;
 import com.jaya.pojo.SignupRequest;
+import com.jaya.utils.JsonSchemaValidatorUtil;
+import com.jaya.utils.ResponseValidator;
 import com.jaya.utils.TestUserCleanupManager;
 import io.qameta.allure.*;
 import io.restassured.response.Response;
@@ -195,5 +197,55 @@ public class RoleTest extends BaseTest {
         int statusCode = response.getStatusCode();
         Assert.assertTrue(statusCode == 400 || statusCode == 403 || statusCode == 500,
                 "Status code should indicate validation error or forbidden. Got: " + statusCode);
+    }
+
+    // ==================== SCHEMA VALIDATION TESTS ====================
+
+    @Test(priority = 13)
+    @Story("Schema Validation")
+    @Description("Verify role by ID response matches JSON schema when accessible")
+    @Severity(SeverityLevel.NORMAL)
+    public void testRoleByIdSchema_WhenAccessible() {
+        Response response = roleClient.getRoleById(1);
+
+        int statusCode = response.getStatusCode();
+        if (statusCode == 200) {
+            JsonSchemaValidatorUtil.validateRoleSchema(response);
+        } else {
+            Assert.assertTrue(statusCode == 403 || statusCode == 404,
+                    "Expected 200 (with valid schema) or 403/404. Got: " + statusCode);
+        }
+    }
+
+    @Test(priority = 14)
+    @Story("Schema Validation")
+    @Description("Verify all roles response matches JSON schema when accessible")
+    @Severity(SeverityLevel.NORMAL)
+    public void testAllRolesSchema_WhenAccessible() {
+        Response response = roleClient.getAllRoles();
+
+        int statusCode = response.getStatusCode();
+        if (statusCode == 200) {
+            JsonSchemaValidatorUtil.validateRoleListSchema(response);
+        } else {
+            Assert.assertTrue(statusCode == 403 || statusCode == 500,
+                    "Expected 200 (with valid schema) or 403/500. Got: " + statusCode);
+        }
+    }
+
+    @Test(priority = 15)
+    @Story("Schema Validation")
+    @Description("Verify role by name response matches JSON schema when accessible")
+    @Severity(SeverityLevel.NORMAL)
+    public void testRoleByNameSchema_WhenAccessible() {
+        Response response = roleClient.getRoleByName("USER");
+
+        int statusCode = response.getStatusCode();
+        if (statusCode == 200) {
+            JsonSchemaValidatorUtil.validateRoleSchema(response);
+        } else {
+            Assert.assertTrue(statusCode == 403 || statusCode == 404,
+                    "Expected 200 (with valid schema) or 403/404. Got: " + statusCode);
+        }
     }
 }

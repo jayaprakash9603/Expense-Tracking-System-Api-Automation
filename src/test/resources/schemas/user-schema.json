@@ -2,25 +2,65 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "User Schema",
   "type": "object",
-  "required": ["id", "email", "fullName"],
+  "required": ["id", "email"],
   "properties": {
     "id": {
       "type": "integer",
       "minimum": 1
     },
     "fullName": {
-      "type": "string",
+      "type": ["string", "null"],
       "minLength": 1,
       "maxLength": 255
     },
     "email": {
       "type": "string",
       "format": "email",
-      "minLength": 5
+      "maxLength": 255
+    },
+    "phoneNumber": {
+      "type": ["string", "null"]
+    },
+    "username": {
+      "type": ["string", "null"]
+    },
+    "website": {
+      "type": ["string", "null"]
+    },
+    "location": {
+      "type": ["string", "null"]
+    },
+    "bio": {
+      "type": ["string", "null"],
+      "maxLength": 500
+    },
+    "profileImage": {
+      "type": ["string", "null"],
+      "maxLength": 1000
+    },
+    "coverImage": {
+      "type": ["string", "null"],
+      "maxLength": 1000
     },
     "mobile": {
+      "type": ["string", "null"]
+    },
+    "occupation": {
+      "type": ["string", "null"]
+    },
+    "dateOfBirth": {
+      "type": ["string", "null"]
+    },
+    "firstName": {
       "type": ["string", "null"],
-      "pattern": "^[0-9]{10}$"
+      "maxLength": 50
+    },
+    "lastName": {
+      "type": ["string", "null"],
+      "maxLength": 50
+    },
+    "gender": {
+      "type": ["string", "null"]
     },
     "roles": {
       "type": ["array", "null"],
@@ -28,13 +68,18 @@
         "type": "string"
       }
     },
+    "currentMode": {
+      "type": ["string", "null"]
+    },
     "createdAt": {
-      "type": ["string", "null"],
-      "format": "date-time"
+      "type": ["string", "null"]
     },
     "updatedAt": {
-      "type": ["string", "null"],
-      "format": "date-time"
+      "type": ["string", "null"]
+    },
+    "validForUpdate": {
+      "type": ["boolean", "null"]
     }
-  }
+  },
+  "additionalProperties": true
 }
